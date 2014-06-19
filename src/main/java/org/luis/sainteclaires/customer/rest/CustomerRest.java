@@ -1,11 +1,16 @@
 package org.luis.sainteclaires.customer.rest;
 
+import java.util.List;
+
 import org.luis.basic.rest.model.SimpleMessage;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.sainteclaires.base.bean.Category;
+import com.sainteclaires.base.util.BaseUtil;
 
 @Controller
 @RequestMapping("/")
@@ -34,6 +39,18 @@ public class CustomerRest {
 		SimpleMessage sm = new SimpleMessage();
 
 		return sm;
+	}
+	
+	@RequestMapping(value = "changePassword", method = RequestMethod.GET)
+	@ResponseBody
+	public List<Category> getParentCates(){
+		return BaseUtil.getParentCates();
+	}
+	
+	@RequestMapping(value = "changePassword", method = RequestMethod.GET)
+	@ResponseBody
+	public List<Category> getSubCates(Long parentId){
+		return BaseUtil.getSubCates(parentId);
 	}
 
 	@RequestMapping(value = "bag/addItem/{shotId}/{itemId}", method = RequestMethod.GET)
