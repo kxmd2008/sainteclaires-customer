@@ -3,14 +3,14 @@ package org.luis.sainteclaires.customer.rest;
 import java.util.List;
 
 import org.luis.basic.rest.model.SimpleMessage;
+import org.luis.sainteclaires.base.bean.Category;
+import org.luis.sainteclaires.base.util.BaseUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.sainteclaires.base.bean.Category;
-import com.sainteclaires.base.util.BaseUtil;
 
 @Controller
 @RequestMapping("/")
