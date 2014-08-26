@@ -22,25 +22,20 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @RequestMapping("/")
 public class CustomerRest {
-	@RequestMapping("admin")
+	
+	@RequestMapping("login")
 	public String login() {
 		return "customer/login";
 	}
+	/**
+	 * 跳到注册页面
+	 * @return
+	 */
 	@RequestMapping("register")
 	public String register(){
 		return "customer/register";
 	}
-	@RequestMapping("submitOrder")
-	public String submitOrder(HttpServletRequest req ,ModelMap map){
-		Account account = (Account) req.getSession().getAttribute(
-				INameSpace.KEY_SESSION_CUSTOMER);
-		FilterAttributes fa = FilterAttributes.blank().add("loginName",
-				account.getLoginName());
-		List<Address> list = ServiceFactory.getAddressService()
-				.findByAttributes(fa);
-		map.put("addresses", list);
-		return "customer/submit_order";
-	}
+	
 	@RequestMapping(value = "login", method = RequestMethod.POST)
 	public String login(String loginName, String password, ModelMap map,
 			HttpServletRequest req) {
@@ -60,18 +55,30 @@ public class CustomerRest {
 		req.getSession().removeAttribute(INameSpace.KEY_SESSION_CUSTOMER);
 		return "redirect:/common/index";
 	}
+	
+	/**
+	 * 订单确认
+	 * @param req
+	 * @param map
+	 * @return
+	 */
+	@RequestMapping("order/confirm")
+	public String submitOrder(HttpServletRequest req ,ModelMap map){
+		Account account = (Account) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CUSTOMER);
+		FilterAttributes fa = FilterAttributes.blank().add("loginName",
+				account.getLoginName());
+		List<Address> list = ServiceFactory.getAddressService()
+				.findByAttributes(fa);
+		map.put("addresses", list);
+		return "customer/submit_order";
+	}
 
 	/**
-	 * 跳到注册页面
-	 * 
+	 * 帐号验证
 	 * @param account
 	 * @return
 	 */
-	@RequestMapping(value = "register", method = RequestMethod.POST)
-	public String register(Account account) {
-		return "customer/register";
-	}
-
 	@RequestMapping(value = "account/check", method = RequestMethod.POST)
 	@ResponseBody
 	public SimpleMessage<?> accountCheck(Account account) {
@@ -96,6 +103,14 @@ public class CustomerRest {
 		return "redirect:/common/index";
 	}
 
+	/**
+	 * 修改密码
+	 * @param oldPwd
+	 * @param newPwd
+	 * @param confirmPwd
+	 * @param req
+	 * @return
+	 */
 	@RequestMapping(value = "changePassword", method = RequestMethod.POST)
 	@ResponseBody
 	public SimpleMessage<?> changePassword(String oldPwd, String newPwd,
@@ -107,16 +122,28 @@ public class CustomerRest {
 		return sm;
 	}
 
-	@RequestMapping(value = "bag/addItem/{shotId}/{itemId}", method = RequestMethod.GET)
+	/**
+	 * 添加商品到购物车
+	 * @param bagId
+	 * @param shotId
+	 * @return
+	 */
+	@RequestMapping(value = "shot/add/{bagId}/{shotId}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage addProductToBag(@PathVariable("shotId") String shotId,
-			@PathVariable("itemId") String itemId) {
+	public SimpleMessage addProductToBag(@PathVariable("bagId") String bagId,
+			@PathVariable("shotId") String shotId) {
 		SimpleMessage sm = new SimpleMessage();
 
 		return sm;
 	}
 
-	@RequestMapping(value = "bag/editItem/{itemId}/{num}", method = RequestMethod.GET)
+	/**
+	 * 修改购物车商品
+	 * @param itemId
+	 * @param num
+	 * @return
+	 */
+	@RequestMapping(value = "shot/edit/{itemId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
 	public SimpleMessage editItem(@PathVariable("itemId") String itemId,
 			@PathVariable("num") int num) {
@@ -125,23 +152,40 @@ public class CustomerRest {
 		return sm;
 	}
 
-	@RequestMapping(value = "bag/deleteItem/{shotId}/{itemId}", method = RequestMethod.GET)
+	/**
+	 * 删除购物车商品
+	 * @param shotId
+	 * @return
+	 */
+	@RequestMapping(value = "shot/delete/{shotId}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage deleteItem(@PathVariable("shotId") String shotId,
-			@PathVariable("itemId") String itemId) {
+	public SimpleMessage deleteItem(@PathVariable("shotId") String shotId) {
 		SimpleMessage sm = new SimpleMessage();
 
 		return sm;
 	}
 
-	@RequestMapping(value = "createOrder/{shotId}", method = RequestMethod.GET)
-	public String createOrder(@PathVariable("shotId") String shotId) {
+	
+	///////////////订单操作///////////////////
+	/**
+	 * 从购物车创建订单
+	 * @param shotId
+	 * @return
+	 */
+	@RequestMapping(value = "order/create/{bagId}", method = RequestMethod.GET)
+	public String createOrder(@PathVariable("bagId") String bagId) {
 		SimpleMessage sm = new SimpleMessage();
 
 		return "";
 	}
 
-	@RequestMapping(value = "order/editItem/{itemId}/{num}", method = RequestMethod.GET)
+	/**
+	 * 订单某一商品修改
+	 * @param itemId
+	 * @param num
+	 * @return
+	 */
+	@RequestMapping(value = "item/edit/{itemId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
 	public SimpleMessage editItemInOrder(@PathVariable("itemId") String itemId,
 			@PathVariable("num") int num) {
@@ -150,7 +194,13 @@ public class CustomerRest {
 		return sm;
 	}
 
-	@RequestMapping(value = "order/deleteItem/{orderId}/{itemId}", method = RequestMethod.GET)
+	/**
+	 * 从订单删除商品
+	 * @param orderId
+	 * @param itemId
+	 * @return
+	 */
+	@RequestMapping(value = "item/delete/{itemId}", method = RequestMethod.GET)
 	@ResponseBody
 	public SimpleMessage deleteItemInOrder(
 			@PathVariable("orderId") String orderId,
@@ -160,6 +210,11 @@ public class CustomerRest {
 		return sm;
 	}
 
+	/**
+	 * 保存地址
+	 * @param address
+	 * @return
+	 */
 	@RequestMapping(value = "address/save", method = RequestMethod.POST)
 	@ResponseBody
 	public SimpleMessage<Address> saveAddress(Address address) {
@@ -172,6 +227,10 @@ public class CustomerRest {
 		return sm;
 	}
 
+	/**
+	 * 查询地址
+	 * @return
+	 */
 	@RequestMapping(value = "addresses", method = RequestMethod.GET)
 	@ResponseBody
 	public SimpleMessage<Address> getAddress(HttpServletRequest req) {
