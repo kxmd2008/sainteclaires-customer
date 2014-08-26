@@ -10,6 +10,8 @@ import org.luis.basic.rest.model.SimpleMessageHead;
 import org.luis.sainteclaires.base.INameSpace;
 import org.luis.sainteclaires.base.bean.Account;
 import org.luis.sainteclaires.base.bean.Address;
+import org.luis.sainteclaires.base.bean.OrderItem;
+import org.luis.sainteclaires.base.bean.ProductShot;
 import org.luis.sainteclaires.base.bean.service.ServiceFactory;
 import org.luis.sainteclaires.base.util.BaseUtil;
 import org.springframework.stereotype.Controller;
@@ -128,12 +130,11 @@ public class CustomerRest {
 	 * @param shotId
 	 * @return
 	 */
-	@RequestMapping(value = "shot/add/{bagId}/{shotId}", method = RequestMethod.GET)
+	@RequestMapping(value = "shot/add", method = RequestMethod.POST)
 	@ResponseBody
-	public SimpleMessage addProductToBag(@PathVariable("bagId") String bagId,
-			@PathVariable("shotId") String shotId) {
-		SimpleMessage sm = new SimpleMessage();
-
+	public SimpleMessage<?> addProductToBag(ProductShot shot) {
+		SimpleMessage<?> sm = new SimpleMessage<Object>();
+		ServiceFactory.getProductShotService().save(shot);
 		return sm;
 	}
 
@@ -143,12 +144,15 @@ public class CustomerRest {
 	 * @param num
 	 * @return
 	 */
-	@RequestMapping(value = "shot/edit/{itemId}/{num}", method = RequestMethod.GET)
+	@RequestMapping(value = "shot/edit/{shotId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage editItem(@PathVariable("itemId") String itemId,
+	public SimpleMessage<?> editItem(@PathVariable("shotId") Long shotId,
 			@PathVariable("num") int num) {
-		SimpleMessage sm = new SimpleMessage();
-
+		SimpleMessage<?> sm = new SimpleMessage<Object>();
+		ProductShot entity = new ProductShot();
+		entity.setId(shotId);
+		entity.setNumber(num);
+		ServiceFactory.getProductShotService().update(entity);
 		return sm;
 	}
 
@@ -159,9 +163,11 @@ public class CustomerRest {
 	 */
 	@RequestMapping(value = "shot/delete/{shotId}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage deleteItem(@PathVariable("shotId") String shotId) {
-		SimpleMessage sm = new SimpleMessage();
-
+	public SimpleMessage<?> deleteItem(@PathVariable("shotId") Long shotId) {
+		SimpleMessage<?> sm = new SimpleMessage<Object>();
+		ProductShot entity = new ProductShot();
+		entity.setId(shotId);
+		ServiceFactory.getProductShotService().delete(entity);
 		return sm;
 	}
 
@@ -187,10 +193,13 @@ public class CustomerRest {
 	 */
 	@RequestMapping(value = "item/edit/{itemId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage editItemInOrder(@PathVariable("itemId") String itemId,
+	public SimpleMessage<?> editItemInOrder(@PathVariable("itemId") Long itemId,
 			@PathVariable("num") int num) {
-		SimpleMessage sm = new SimpleMessage();
-
+		SimpleMessage<?> sm = new SimpleMessage<Object>();
+		OrderItem entity = new OrderItem();
+		entity.setId(itemId);
+		entity.setNum(num);
+		ServiceFactory.getOrderDetailService().update(entity);
 		return sm;
 	}
 
@@ -202,11 +211,12 @@ public class CustomerRest {
 	 */
 	@RequestMapping(value = "item/delete/{itemId}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage deleteItemInOrder(
-			@PathVariable("orderId") String orderId,
-			@PathVariable("itemId") String itemId) {
-		SimpleMessage sm = new SimpleMessage();
-
+	public SimpleMessage<?> deleteItemInOrder(
+			@PathVariable("itemId") Long itemId) {
+		SimpleMessage<?> sm = new SimpleMessage<Object>();
+		OrderItem entity = new OrderItem();
+		entity.setId(itemId);
+		ServiceFactory.getOrderDetailService().delete(entity);
 		return sm;
 	}
 
