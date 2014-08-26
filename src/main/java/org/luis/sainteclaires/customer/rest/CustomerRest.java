@@ -22,7 +22,25 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @RequestMapping("/")
 public class CustomerRest {
-
+	@RequestMapping("admin")
+	public String login() {
+		return "customer/login";
+	}
+	@RequestMapping("register")
+	public String register(){
+		return "customer/register";
+	}
+	@RequestMapping("submitOrder")
+	public String submitOrder(HttpServletRequest req ,ModelMap map){
+		Account account = (Account) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CUSTOMER);
+		FilterAttributes fa = FilterAttributes.blank().add("loginName",
+				account.getLoginName());
+		List<Address> list = ServiceFactory.getAddressService()
+				.findByAttributes(fa);
+		map.put("addresses", list);
+		return "customer/submit_order";
+	}
 	@RequestMapping(value = "login", method = RequestMethod.POST)
 	public String login(String loginName, String password, ModelMap map,
 			HttpServletRequest req) {
