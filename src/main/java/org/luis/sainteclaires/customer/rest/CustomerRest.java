@@ -71,7 +71,7 @@ public class CustomerRest {
 	@RequestMapping(value = "account/create", method = RequestMethod.POST)
 	public String accountCreate(Account account, ModelMap map) {
 		SimpleMessage<?> sm = BaseUtil.getAccountService().registion(account);
-		if(!sm.getHead().getRep_code().equals(SimpleMessageHead.REP_OK)){
+		if (!sm.getHead().getRep_code().equals(SimpleMessageHead.REP_OK)) {
 			map.put("error", sm.getHead().getRep_message());
 			return "customer/register";
 		}
@@ -80,10 +80,12 @@ public class CustomerRest {
 
 	@RequestMapping(value = "changePassword", method = RequestMethod.POST)
 	@ResponseBody
-	public SimpleMessage changePassword(String oldPwd, String newPwd,
-			String confirmPwd) {
-		SimpleMessage sm = new SimpleMessage();
-
+	public SimpleMessage<?> changePassword(String oldPwd, String newPwd,
+			String confirmPwd, HttpServletRequest req) {
+		Account account = (Account) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CUSTOMER);
+		SimpleMessage<?> sm = BaseUtil.getAccountService().changePassword(
+				account, oldPwd, newPwd, confirmPwd);
 		return sm;
 	}
 
