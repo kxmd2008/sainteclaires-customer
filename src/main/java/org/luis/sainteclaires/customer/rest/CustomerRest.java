@@ -52,10 +52,10 @@ public class CustomerRest {
 		return "common/index";
 	}
 
-	@RequestMapping(value = "logout", method = RequestMethod.POST)
+	@RequestMapping(value = "logout", method = RequestMethod.GET)
 	public String logout(HttpServletRequest req) {
 		req.getSession().removeAttribute(INameSpace.KEY_SESSION_CUSTOMER);
-		return "redirect:/common/index";
+		return "redirect:/index.do";
 	}
 	
 	/**
@@ -102,7 +102,7 @@ public class CustomerRest {
 			map.put("error", sm.getHead().getRep_message());
 			return "customer/register";
 		}
-		return "redirect:/common/index";
+		return "redirect:/index.do";
 	}
 
 	/**
