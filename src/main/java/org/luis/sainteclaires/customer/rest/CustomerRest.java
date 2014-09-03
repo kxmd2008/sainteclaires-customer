@@ -1,6 +1,7 @@
 package org.luis.sainteclaires.customer.rest;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -10,8 +11,10 @@ import org.luis.basic.rest.model.SimpleMessageHead;
 import org.luis.sainteclaires.base.INameSpace;
 import org.luis.sainteclaires.base.bean.Account;
 import org.luis.sainteclaires.base.bean.Address;
+import org.luis.sainteclaires.base.bean.Category;
 import org.luis.sainteclaires.base.bean.OrderItem;
 import org.luis.sainteclaires.base.bean.ProductShot;
+import org.luis.sainteclaires.base.bean.ShoppingBag;
 import org.luis.sainteclaires.base.bean.service.ServiceFactory;
 import org.luis.sainteclaires.base.util.BaseUtil;
 import org.springframework.stereotype.Controller;
@@ -132,9 +135,19 @@ public class CustomerRest {
 	 */
 	@RequestMapping(value = "shot/add", method = RequestMethod.POST)
 	@ResponseBody
-	public SimpleMessage<?> addProductToBag(ProductShot shot) {
-		SimpleMessage<?> sm = new SimpleMessage<Object>();
-		ServiceFactory.getProductShotService().save(shot);
+	public SimpleMessage<?> addProductToBag(ProductShot shot, HttpServletRequest req, ModelMap map) {
+		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
+		if(bag == null){
+			bag = new ShoppingBag();
+			bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
+			bag.setTotalAmount(bag.getTotalAmount().add(shot.getPrice()));
+			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_CART, bag);
+		}
+		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
+		sm.setItem(bag);
+		setModel(map);
+//		SimpleMessage<?> sm = new SimpleMessage<Object>();
+//		ServiceFactory.getProductShotService().save(shot);
 		return sm;
 	}
 
@@ -144,15 +157,23 @@ public class CustomerRest {
 	 * @param num
 	 * @return
 	 */
-	@RequestMapping(value = "shot/edit/{shotId}/{num}", method = RequestMethod.GET)
+	@RequestMapping(value = "shot/edit/{productId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage<?> editItem(@PathVariable("shotId") Long shotId,
-			@PathVariable("num") int num) {
-		SimpleMessage<?> sm = new SimpleMessage<Object>();
-		ProductShot entity = new ProductShot();
-		entity.setId(shotId);
-		entity.setNumber(num);
-		ServiceFactory.getProductShotService().update(entity);
+	public SimpleMessage<ShoppingBag> editItem(@PathVariable("productId") Long productId,
+			@PathVariable("num") Integer num, HttpServletRequest req) {
+		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
+		for (ProductShot shot : bag.getProductShots()) {
+			if(shot.getProductId().equals(productId)){
+				shot.setNumber(num);
+				break;
+			}
+		}
+		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
+		sm.setItem(bag);
+//		ProductShot entity = new ProductShot();
+//		entity.setId(shotId);
+//		entity.setNumber(num);
+//		ServiceFactory.getProductShotService().update(entity);
 		return sm;
 	}
 
@@ -161,13 +182,23 @@ public class CustomerRest {
 	 * @param shotId
 	 * @return
 	 */
-	@RequestMapping(value = "shot/delete/{shotId}", method = RequestMethod.GET)
+	@RequestMapping(value = "shot/delete/{productId}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage<?> deleteItem(@PathVariable("shotId") Long shotId) {
-		SimpleMessage<?> sm = new SimpleMessage<Object>();
-		ProductShot entity = new ProductShot();
-		entity.setId(shotId);
-		ServiceFactory.getProductShotService().delete(entity);
+	public SimpleMessage<ShoppingBag> deleteItem(@PathVariable("productId") Long productId, HttpServletRequest req) {
+		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
+		ProductShot temp = null;
+		for (ProductShot shot : bag.getProductShots()) {
+			if(shot.getProductId().equals(productId)){
+				temp = shot;
+				break;
+			}
+		}
+		bag.getProductShots().remove(temp);
+		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
+		sm.setItem(bag);
+//		ProductShot entity = new ProductShot();
+//		entity.setId(shotId);
+//		ServiceFactory.getProductShotService().delete(entity);
 		return sm;
 	}
 
@@ -253,6 +284,15 @@ public class CustomerRest {
 		SimpleMessage<Address> sm = new SimpleMessage<Address>();
 		sm.setRecords(list);
 		return sm;
+	}
+	
+	
+	
+	private void setModel(ModelMap map){
+		List<Category> parents = BaseUtil.getParentCates();
+		Map<Long, List<Category>> subcatMap = BaseUtil.getSubCatsMap();
+		map.put("parents", parents);
+		map.put("subcatMap", subcatMap);
 	}
 
 }
