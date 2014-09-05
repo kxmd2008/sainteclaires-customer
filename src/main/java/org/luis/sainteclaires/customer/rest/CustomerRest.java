@@ -40,6 +40,22 @@ public class CustomerRest {
 	public String register(){
 		return "customer/register";
 	}
+	/**
+	 * 跳转到提交订单
+	 * @return
+	 */
+	@RequestMapping("submitOrder")
+	public String submitOrder(){
+		return "customer/submit_order";
+	}
+	/**
+	 * 跳转到订单查看页面
+	 * @return
+	 */
+	@RequestMapping("orders")
+	public String orders(){
+		return "customer/orders";
+	}
 	
 	@RequestMapping(value = "login", method = RequestMethod.POST)
 	public String login(String loginName, String password, ModelMap map,
