@@ -14,6 +14,7 @@ import org.luis.sainteclaires.base.bean.Address;
 import org.luis.sainteclaires.base.bean.Category;
 import org.luis.sainteclaires.base.bean.OrderItem;
 import org.luis.sainteclaires.base.bean.ProductShot;
+import org.luis.sainteclaires.base.bean.ProductVo;
 import org.luis.sainteclaires.base.bean.ShoppingBag;
 import org.luis.sainteclaires.base.bean.service.ServiceFactory;
 import org.luis.sainteclaires.base.util.BaseUtil;
@@ -74,7 +75,7 @@ public class CustomerRest {
 	@RequestMapping(value = "logout", method = RequestMethod.GET)
 	public String logout(HttpServletRequest req) {
 		req.getSession().removeAttribute(INameSpace.KEY_SESSION_CUSTOMER);
-		return "redirect:/index.do";
+		return "redirect:/index";
 	}
 	
 	/**
@@ -121,7 +122,7 @@ public class CustomerRest {
 			map.put("error", sm.getHead().getRep_message());
 			return "customer/register";
 		}
-		return "redirect:/index.do";
+		return "redirect:/index";
 	}
 
 	/**
@@ -150,21 +151,29 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "shot/add", method = RequestMethod.POST)
-	@ResponseBody
-	public SimpleMessage<?> addProductToBag(ProductShot shot, HttpServletRequest req, ModelMap map) {
+	public String addProductToBag(ProductShot shot, HttpServletRequest req, ModelMap map) {
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
+		ProductVo vo = BaseUtil.getProductVoService().get(shot.getProductId());
+		shot.setPic(vo.getPics());
+		shot.setProductName(vo.getName());
+		shot.setPrice(vo.getPrice());
 		if(bag == null){
 			bag = new ShoppingBag();
-			bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
+			if(BaseUtil.getSessionAccount(req) != null){
+				bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
+			}
 			bag.setTotalAmount(bag.getTotalAmount().add(shot.getPrice()));
+			bag.getProductShots().add(shot);
 			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_CART, bag);
+		} else {
+			bag.getProductShots().add(shot);
 		}
 		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
 		sm.setItem(bag);
 		setModel(map);
 //		SimpleMessage<?> sm = new SimpleMessage<Object>();
 //		ServiceFactory.getProductShotService().save(shot);
-		return sm;
+		return "redirect:/detail?id=" + vo.getId();
 	}
 
 	/**
