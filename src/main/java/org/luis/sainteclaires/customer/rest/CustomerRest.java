@@ -183,7 +183,6 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "shot/edit/{productId}/{num}", method = RequestMethod.GET)
-	@ResponseBody
 	public SimpleMessage<ShoppingBag> editItem(@PathVariable("productId") Long productId,
 			@PathVariable("num") Integer num, HttpServletRequest req) {
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
@@ -218,6 +217,7 @@ public class CustomerRest {
 				break;
 			}
 		}
+		bag.setTotalAmount(bag.getTotalAmount().subtract(temp.getPrice()));
 		bag.getProductShots().remove(temp);
 		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
 		sm.setItem(bag);
