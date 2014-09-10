@@ -1,5 +1,6 @@
 package org.luis.sainteclaires.customer.rest;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -28,36 +29,42 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @RequestMapping("/")
 public class CustomerRest {
-	
+
 	@RequestMapping("login")
 	public String login() {
 		return "customer/login";
 	}
+
 	/**
 	 * 跳到注册页面
+	 * 
 	 * @return
 	 */
 	@RequestMapping("register")
-	public String register(){
+	public String register() {
 		return "customer/register";
 	}
+
 	/**
 	 * 跳转到提交订单
+	 * 
 	 * @return
 	 */
 	@RequestMapping("submitOrder")
-	public String submitOrder(){
+	public String submitOrder() {
 		return "customer/submit_order";
 	}
+
 	/**
 	 * 跳转到订单查看页面
+	 * 
 	 * @return
 	 */
 	@RequestMapping("orders")
-	public String orders(){
+	public String orders() {
 		return "customer/orders";
 	}
-	
+
 	@RequestMapping(value = "login", method = RequestMethod.POST)
 	public String login(String loginName, String password, ModelMap map,
 			HttpServletRequest req) {
@@ -77,15 +84,16 @@ public class CustomerRest {
 		req.getSession().removeAttribute(INameSpace.KEY_SESSION_CUSTOMER);
 		return "redirect:/index";
 	}
-	
+
 	/**
 	 * 订单确认
+	 * 
 	 * @param req
 	 * @param map
 	 * @return
 	 */
 	@RequestMapping("order/confirm")
-	public String submitOrder(HttpServletRequest req ,ModelMap map){
+	public String submitOrder(HttpServletRequest req, ModelMap map) {
 		Account account = (Account) req.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CUSTOMER);
 		FilterAttributes fa = FilterAttributes.blank().add("loginName",
@@ -98,6 +106,7 @@ public class CustomerRest {
 
 	/**
 	 * 帐号验证
+	 * 
 	 * @param account
 	 * @return
 	 */
@@ -127,6 +136,7 @@ public class CustomerRest {
 
 	/**
 	 * 修改密码
+	 * 
 	 * @param oldPwd
 	 * @param newPwd
 	 * @param confirmPwd
@@ -146,20 +156,23 @@ public class CustomerRest {
 
 	/**
 	 * 添加商品到购物车
+	 * 
 	 * @param bagId
 	 * @param shotId
 	 * @return
 	 */
 	@RequestMapping(value = "shot/add", method = RequestMethod.POST)
-	public String addProductToBag(ProductShot shot, HttpServletRequest req, ModelMap map) {
-		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
+	public String addProductToBag(ProductShot shot, HttpServletRequest req,
+			ModelMap map) {
+		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CART);
 		ProductVo vo = BaseUtil.getProductVoService().get(shot.getProductId());
 		shot.setPic(vo.getPics());
 		shot.setProductName(vo.getName());
 		shot.setPrice(vo.getPrice());
-		if(bag == null){
+		if (bag == null) {
 			bag = new ShoppingBag();
-			if(BaseUtil.getSessionAccount(req) != null){
+			if (BaseUtil.getSessionAccount(req) != null) {
 				bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
 			}
 			bag.setTotalAmount(bag.getTotalAmount().add(shot.getPrice()));
@@ -168,51 +181,60 @@ public class CustomerRest {
 		} else {
 			bag.getProductShots().add(shot);
 		}
+		bag.setTotalAmount(bag.getTotalAmount().add(shot.getPrice()));
 		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
 		sm.setItem(bag);
 		setModel(map);
-//		SimpleMessage<?> sm = new SimpleMessage<Object>();
-//		ServiceFactory.getProductShotService().save(shot);
+		// SimpleMessage<?> sm = new SimpleMessage<Object>();
+		// ServiceFactory.getProductShotService().save(shot);
 		return "redirect:/detail?id=" + vo.getId();
 	}
 
 	/**
 	 * 修改购物车商品
+	 * 
 	 * @param itemId
 	 * @param num
 	 * @return
 	 */
 	@RequestMapping(value = "shot/edit/{productId}/{num}", method = RequestMethod.GET)
-	public SimpleMessage<ShoppingBag> editItem(@PathVariable("productId") Long productId,
+	public SimpleMessage<ShoppingBag> editItem(
+			@PathVariable("productId") Long productId,
 			@PathVariable("num") Integer num, HttpServletRequest req) {
-		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
+		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CART);
 		for (ProductShot shot : bag.getProductShots()) {
-			if(shot.getProductId().equals(productId)){
+			if (shot.getProductId().equals(productId)) {
+				int n = num - shot.getNumber();
 				shot.setNumber(num);
+				bag.setTotalAmount(bag.getTotalAmount().add(
+						shot.getPrice().multiply(BigDecimal.valueOf(n))));
 				break;
 			}
 		}
 		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
 		sm.setItem(bag);
-//		ProductShot entity = new ProductShot();
-//		entity.setId(shotId);
-//		entity.setNumber(num);
-//		ServiceFactory.getProductShotService().update(entity);
+		// ProductShot entity = new ProductShot();
+		// entity.setId(shotId);
+		// entity.setNumber(num);
+		// ServiceFactory.getProductShotService().update(entity);
 		return sm;
 	}
 
 	/**
 	 * 删除购物车商品
+	 * 
 	 * @param shotId
 	 * @return
 	 */
 	@RequestMapping(value = "shot/delete/{productId}", method = RequestMethod.GET)
-	@ResponseBody
-	public SimpleMessage<ShoppingBag> deleteItem(@PathVariable("productId") Long productId, HttpServletRequest req) {
-		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(INameSpace.KEY_SESSION_CART);
+	public String deleteItem(@PathVariable("productId") Long productId,
+			HttpServletRequest req) {
+		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CART);
 		ProductShot temp = null;
 		for (ProductShot shot : bag.getProductShots()) {
-			if(shot.getProductId().equals(productId)){
+			if (shot.getProductId().equals(productId)) {
 				temp = shot;
 				break;
 			}
@@ -221,16 +243,18 @@ public class CustomerRest {
 		bag.getProductShots().remove(temp);
 		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
 		sm.setItem(bag);
-//		ProductShot entity = new ProductShot();
-//		entity.setId(shotId);
-//		ServiceFactory.getProductShotService().delete(entity);
-		return sm;
+		String path = req.getContextPath();
+		String content = req.getRequestURI();
+		// ProductShot entity = new ProductShot();
+		// entity.setId(shotId);
+		// ServiceFactory.getProductShotService().delete(entity);
+		return "redirect:/detail?id=" + 3;
 	}
 
-	
-	///////////////订单操作///////////////////
+	// /////////////订单操作///////////////////
 	/**
 	 * 从购物车创建订单
+	 * 
 	 * @param shotId
 	 * @return
 	 */
@@ -243,14 +267,15 @@ public class CustomerRest {
 
 	/**
 	 * 订单某一商品修改
+	 * 
 	 * @param itemId
 	 * @param num
 	 * @return
 	 */
 	@RequestMapping(value = "item/edit/{itemId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage<?> editItemInOrder(@PathVariable("itemId") Long itemId,
-			@PathVariable("num") int num) {
+	public SimpleMessage<?> editItemInOrder(
+			@PathVariable("itemId") Long itemId, @PathVariable("num") int num) {
 		SimpleMessage<?> sm = new SimpleMessage<Object>();
 		OrderItem entity = new OrderItem();
 		entity.setId(itemId);
@@ -261,6 +286,7 @@ public class CustomerRest {
 
 	/**
 	 * 从订单删除商品
+	 * 
 	 * @param orderId
 	 * @param itemId
 	 * @return
@@ -278,6 +304,7 @@ public class CustomerRest {
 
 	/**
 	 * 保存地址
+	 * 
 	 * @param address
 	 * @return
 	 */
@@ -295,6 +322,7 @@ public class CustomerRest {
 
 	/**
 	 * 查询地址
+	 * 
 	 * @return
 	 */
 	@RequestMapping(value = "addresses", method = RequestMethod.GET)
@@ -310,10 +338,8 @@ public class CustomerRest {
 		sm.setRecords(list);
 		return sm;
 	}
-	
-	
-	
-	private void setModel(ModelMap map){
+
+	private void setModel(ModelMap map) {
 		List<Category> parents = BaseUtil.getParentCates();
 		Map<Long, List<Category>> subcatMap = BaseUtil.getSubCatsMap();
 		map.put("parents", parents);
