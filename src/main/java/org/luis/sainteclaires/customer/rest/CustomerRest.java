@@ -175,7 +175,6 @@ public class CustomerRest {
 			if (BaseUtil.getSessionAccount(req) != null) {
 				bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
 			}
-			bag.setTotalAmount(bag.getTotalAmount().add(shot.getPrice()));
 			bag.getProductShots().add(shot);
 			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_CART, bag);
 		} else {
