@@ -1,6 +1,7 @@
 package org.luis.sainteclaires.customer.rest;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -143,7 +144,7 @@ public class CustomerRest {
 	 * @param req
 	 * @return
 	 */
-	@RequestMapping(value = "changePassword", method = RequestMethod.POST)
+	@RequestMapping(value = "password/change", method = RequestMethod.POST)
 	@ResponseBody
 	public SimpleMessage<?> changePassword(String oldPwd, String newPwd,
 			String confirmPwd, HttpServletRequest req) {
@@ -271,7 +272,7 @@ public class CustomerRest {
 	 * @param num
 	 * @return
 	 */
-	@RequestMapping(value = "item/edit/{itemId}/{num}", method = RequestMethod.GET)
+	@RequestMapping(value = "order/item/edit/{itemId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
 	public SimpleMessage<?> editItemInOrder(
 			@PathVariable("itemId") Long itemId, @PathVariable("num") int num) {
@@ -290,7 +291,7 @@ public class CustomerRest {
 	 * @param itemId
 	 * @return
 	 */
-	@RequestMapping(value = "item/delete/{itemId}", method = RequestMethod.GET)
+	@RequestMapping(value = "order/item/delete/{itemId}", method = RequestMethod.GET)
 	@ResponseBody
 	public SimpleMessage<?> deleteItemInOrder(
 			@PathVariable("itemId") Long itemId) {
