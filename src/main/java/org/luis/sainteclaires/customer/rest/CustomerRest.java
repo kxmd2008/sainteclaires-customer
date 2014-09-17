@@ -1,7 +1,6 @@
 package org.luis.sainteclaires.customer.rest;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -10,14 +9,17 @@ import javax.servlet.http.HttpServletRequest;
 import org.luis.basic.domain.FilterAttributes;
 import org.luis.basic.rest.model.SimpleMessage;
 import org.luis.basic.rest.model.SimpleMessageHead;
+import org.luis.basic.util.SpringContextFactory;
 import org.luis.sainteclaires.base.INameSpace;
 import org.luis.sainteclaires.base.bean.Account;
 import org.luis.sainteclaires.base.bean.Address;
 import org.luis.sainteclaires.base.bean.Category;
+import org.luis.sainteclaires.base.bean.Order;
 import org.luis.sainteclaires.base.bean.OrderItem;
 import org.luis.sainteclaires.base.bean.ProductShot;
 import org.luis.sainteclaires.base.bean.ProductVo;
 import org.luis.sainteclaires.base.bean.ShoppingBag;
+import org.luis.sainteclaires.base.bean.service.OrderService;
 import org.luis.sainteclaires.base.bean.service.ServiceFactory;
 import org.luis.sainteclaires.base.util.BaseUtil;
 import org.springframework.stereotype.Controller;
@@ -56,16 +58,6 @@ public class CustomerRest {
 		return "customer/submit_order";
 	}
 
-	/**
-	 * 跳转到订单查看页面
-	 * 
-	 * @return
-	 */
-	@RequestMapping("orders")
-	public String orders() {
-		return "customer/orders";
-	}
-
 	@RequestMapping(value = "login", method = RequestMethod.POST)
 	public String login(String loginName, String password, ModelMap map,
 			HttpServletRequest req) {
@@ -95,14 +87,26 @@ public class CustomerRest {
 	 */
 	@RequestMapping("order/confirm")
 	public String submitOrder(HttpServletRequest req, ModelMap map) {
-		Account account = (Account) req.getSession().getAttribute(
-				INameSpace.KEY_SESSION_CUSTOMER);
-		FilterAttributes fa = FilterAttributes.blank().add("loginName",
-				account.getLoginName());
-		List<Address> list = ServiceFactory.getAddressService()
-				.findByAttributes(fa);
-		map.put("addresses", list);
+		String userName = BaseUtil.getLoginName(req);
+		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CART);
+		orderService.createOrder(bag, userName);
+		setAddress(map, userName);
 		return "customer/submit_order";
+	}
+	
+	/**
+	 * 跳转到订单查看页面
+	 * 
+	 * @return
+	 */
+	@RequestMapping("orders")
+	public String orders(HttpServletRequest req, ModelMap map) {
+		String userName = BaseUtil.getLoginName(req);
+		List<Order> orders = orderService.findUnpayOrders(userName);
+		map.put("orders", orders);
+		setAddress(map, userName);
+		return "customer/orders";
 	}
 
 	/**
@@ -198,6 +202,7 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "shot/edit/{productId}/{num}", method = RequestMethod.GET)
+	@ResponseBody
 	public SimpleMessage<ShoppingBag> editItem(
 			@PathVariable("productId") Long productId,
 			@PathVariable("num") Integer num, HttpServletRequest req) {
@@ -243,12 +248,37 @@ public class CustomerRest {
 		bag.getProductShots().remove(temp);
 		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
 		sm.setItem(bag);
-		String path = req.getContextPath();
-		String content = req.getRequestURI();
 		// ProductShot entity = new ProductShot();
 		// entity.setId(shotId);
 		// ServiceFactory.getProductShotService().delete(entity);
-		return "redirect:/detail?id=" + 3;
+		return "redirect:/detail?id=" + productId;
+	}
+	
+	/**
+	 * 管理收货地址
+	 * @return
+	 */
+	@RequestMapping("address")
+	public String address(){
+		return "customer/addressmg";
+	}
+	
+	/**
+	 * 账户管理
+	 * @return
+	 */
+	@RequestMapping("account")
+	public String account(){
+		return "customer/accountmg";
+	}
+	
+	/**
+	 * 密码修改
+	 * @return
+	 */
+	@RequestMapping("password")
+	public String password(){
+		return "customer/passwordmg";
 	}
 
 	// /////////////订单操作///////////////////
@@ -260,8 +290,6 @@ public class CustomerRest {
 	 */
 	@RequestMapping(value = "order/create/{bagId}", method = RequestMethod.GET)
 	public String createOrder(@PathVariable("bagId") String bagId) {
-		SimpleMessage sm = new SimpleMessage();
-
 		return "";
 	}
 
@@ -273,15 +301,14 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "order/item/edit/{itemId}/{num}", method = RequestMethod.GET)
-	@ResponseBody
-	public SimpleMessage<?> editItemInOrder(
+//	@ResponseBody
+	public String editItemInOrder(
 			@PathVariable("itemId") Long itemId, @PathVariable("num") int num) {
-		SimpleMessage<?> sm = new SimpleMessage<Object>();
 		OrderItem entity = new OrderItem();
 		entity.setId(itemId);
 		entity.setNum(num);
 		ServiceFactory.getOrderDetailService().update(entity);
-		return sm;
+		return "redirect:/orders";
 	}
 
 	/**
@@ -292,14 +319,12 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "order/item/delete/{itemId}", method = RequestMethod.GET)
-	@ResponseBody
-	public SimpleMessage<?> deleteItemInOrder(
+	public String deleteItemInOrder(
 			@PathVariable("itemId") Long itemId) {
-		SimpleMessage<?> sm = new SimpleMessage<Object>();
 		OrderItem entity = new OrderItem();
 		entity.setId(itemId);
 		ServiceFactory.getOrderDetailService().delete(entity);
-		return sm;
+		return "redirect:/orders";
 	}
 
 	/**
@@ -345,5 +370,16 @@ public class CustomerRest {
 		map.put("parents", parents);
 		map.put("subcatMap", subcatMap);
 	}
+	
+	private void setAddress(ModelMap map, String userName){
+		FilterAttributes fa = FilterAttributes.blank().add("loginName",
+				userName);
+		List<Address> list = ServiceFactory.getAddressService()
+				.findByAttributes(fa);
+		map.put("addresses", list);
+	}
+
+	private OrderService orderService = SpringContextFactory
+			.getSpringBean(OrderService.class);
 
 }
