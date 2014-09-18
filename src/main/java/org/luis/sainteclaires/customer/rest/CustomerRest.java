@@ -259,7 +259,17 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping("address")
-	public String address(){
+	public String address(ModelMap map , HttpServletRequest request){
+		Account account = (Account) request.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CUSTOMER);
+		FilterAttributes fa = FilterAttributes.blank().add("loginName",
+				account.getLoginName());
+		List<Address> list = ServiceFactory.getAddressService()
+				.findByAttributes(fa);
+//		SimpleMessage<Address> sm = new SimpleMessage<Address>();
+//		sm.setRecords(list);
+		map.put("addresses", list);
+		map.put("succ", request.getParameter("succ"));
 		return "customer/addressmg";
 	}
 	
@@ -268,8 +278,32 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping("account")
-	public String account(){
+	public String account(ModelMap map , HttpServletRequest request){
+		Account account = (Account)request.getSession().getAttribute(INameSpace.KEY_SESSION_CUSTOMER);
+		map.put(INameSpace.KEY_SESSION_CUSTOMER, account);
+		map.put("succ", request.getParameter("succ"));
 		return "customer/accountmg";
+	}
+	/**
+	 * 保存账号信息
+	 * @param account
+	 * @param req
+	 * @return
+	 */
+	@RequestMapping(value="account/save" ,method=RequestMethod.POST)
+	public String accountSave(Account account , HttpServletRequest req ,ModelMap map){
+		String loginName = (String)req.getSession().getAttribute("userName");
+		Account a = BaseUtil.getAccountService().getAccount(loginName);
+		a.setCustName(account.getCustName());
+		a.setEmail(account.getEmail());
+		a.setPhone(account.getPhone());
+		boolean flag = BaseUtil.getAccountService().update(a);
+		if(flag == true){
+			req.getSession().setAttribute(INameSpace.KEY_SESSION_CUSTOMER, a);
+		}
+		map.put("succ", flag);
+//		map.put("account", account);
+		return "redirect:/account";
 	}
 	
 	/**
@@ -277,7 +311,8 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping("password")
-	public String password(){
+	public String password(ModelMap map , HttpServletRequest request){
+		map.put("succ", request.getParameter("succ"));
 		return "customer/passwordmg";
 	}
 
@@ -334,15 +369,17 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "address/save", method = RequestMethod.POST)
-	@ResponseBody
-	public SimpleMessage<Address> saveAddress(Address address) {
-		SimpleMessage<Address> sm = new SimpleMessage<Address>();
+	public String saveAddress(Address address , ModelMap map , HttpServletRequest request) {
+//		SimpleMessage<Address> sm = new SimpleMessage<Address>();
+		address.setLoginName((String)request.getSession().getAttribute("userName"));
 		boolean b = ServiceFactory.getAddressService().save(address);
-		if (!b) {
-			sm.getHead().setRep_code("1002");
-			sm.getHead().setRep_message("地址保存失败");
-		}
-		return sm;
+//		if (!b) {
+//			sm.getHead().setRep_code("1002");
+//			sm.getHead().setRep_message("地址保存失败");
+//		}
+		map.put("succ", b);
+		return "redirect:/address";
+//		return sm;
 	}
 
 	/**
@@ -362,6 +399,26 @@ public class CustomerRest {
 		SimpleMessage<Address> sm = new SimpleMessage<Address>();
 		sm.setRecords(list);
 		return sm;
+	}
+	/**
+	 * 设置默认地址
+	 * @param id
+	 * @param req
+	 * @return
+	 */
+	@RequestMapping(value="address/default/{id}" ,method=RequestMethod.GET)
+	@ResponseBody
+	public SimpleMessage<?> setDefaultAddress(@PathVariable("id") long id , HttpServletRequest req){
+		Account account = (Account) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CUSTOMER);
+		Account a = BaseUtil.getAccountService().getAccount(account.getLoginName());
+		a.setAddressId(id);
+		boolean flag = BaseUtil.getAccountService().update(a);
+		if(flag == true){
+			req.getSession().setAttribute(INameSpace.KEY_SESSION_CUSTOMER, a);
+			return new SimpleMessage<Object>();
+		}
+		return new SimpleMessage<Object>(new SimpleMessageHead(SimpleMessageHead.REP_SERVICE_ERROR,"设置默认地址失败"));
 	}
 
 	private void setModel(ModelMap map) {
