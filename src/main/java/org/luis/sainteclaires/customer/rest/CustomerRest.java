@@ -65,6 +65,7 @@ public class CustomerRest {
 	@RequestMapping(value = "logout", method = RequestMethod.GET)
 	public String logout(HttpServletRequest req) {
 		req.getSession().removeAttribute(INameSpace.KEY_SESSION_CUSTOMER);
+		req.getSession().removeAttribute("userName");
 		return "redirect:/index";
 	}
 
@@ -266,8 +267,6 @@ public class CustomerRest {
 				account.getLoginName());
 		List<Address> list = ServiceFactory.getAddressService()
 				.findByAttributes(fa);
-		// SimpleMessage<Address> sm = new SimpleMessage<Address>();
-		// sm.setRecords(list);
 		map.put("addresses", list);
 		map.put("succ", request.getParameter("succ"));
 		return "customer/addressmg";
@@ -295,20 +294,18 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "account/save", method = RequestMethod.POST)
-	public String accountSave(Account account, HttpServletRequest req,
-			ModelMap map) {
+	@ResponseBody
+	public SimpleMessage<?> accountSave1(Account account, HttpServletRequest req,ModelMap map){
 		String loginName = (String) req.getSession().getAttribute("userName");
 		Account a = BaseUtil.getAccountService().getAccount(loginName);
 		a.setCustName(account.getCustName());
 		a.setEmail(account.getEmail());
 		a.setPhone(account.getPhone());
-		boolean flag = BaseUtil.getAccountService().update(a);
-		if (flag == true) {
+		SimpleMessage<?> sm = BaseUtil.getAccountService().updateAccount(a);
+		if(sm.getHead().getRep_code().endsWith(SimpleMessageHead.REP_OK)){
 			req.getSession().setAttribute(INameSpace.KEY_SESSION_CUSTOMER, a);
 		}
-		map.put("succ", flag);
-		// map.put("account", account);
-		return "redirect:/account";
+		return sm;
 	}
 
 	/**
@@ -376,14 +373,9 @@ public class CustomerRest {
 	@RequestMapping(value = "address/save", method = RequestMethod.POST)
 	public String saveAddress(Address address, ModelMap map,
 			HttpServletRequest request) {
-		// SimpleMessage<Address> sm = new SimpleMessage<Address>();
 		address.setLoginName((String) request.getSession().getAttribute(
 				"userName"));
 		boolean b = ServiceFactory.getAddressService().save(address);
-		// if (!b) {
-		// sm.getHead().setRep_code("1002");
-		// sm.getHead().setRep_message("地址保存失败");
-		// }
 		map.put("succ", b);
 		return "redirect:/address";
 		// return sm;
