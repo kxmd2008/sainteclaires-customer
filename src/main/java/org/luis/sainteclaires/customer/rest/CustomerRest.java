@@ -48,16 +48,6 @@ public class CustomerRest {
 		return "customer/register";
 	}
 
-	/**
-	 * 跳转到提交订单
-	 * 
-	 * @return
-	 */
-	@RequestMapping("submitOrder")
-	public String submitOrder() {
-		return "customer/submit_order";
-	}
-
 	@RequestMapping(value = "login", method = RequestMethod.POST)
 	public String login(String loginName, String password, ModelMap map,
 			HttpServletRequest req) {
@@ -90,11 +80,18 @@ public class CustomerRest {
 		String userName = BaseUtil.getLoginName(req);
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CART);
-		orderService.createOrder(bag, userName);
+		if(bag != null){
+			Order order = orderService.createOrder(bag, userName);
+			req.getSession().removeAttribute(INameSpace.KEY_SESSION_CART);
+			map.put("order", order);
+		} else {
+			List<Order> orders = orderService.findUnpayOrders(userName);
+			map.put("order", orders.get(orders.size() - 1));
+		}
 		setAddress(map, userName);
 		return "customer/submit_order";
 	}
-	
+
 	/**
 	 * 跳转到订单查看页面
 	 * 
@@ -172,20 +169,22 @@ public class CustomerRest {
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CART);
 		ProductVo vo = BaseUtil.getProductVoService().get(shot.getProductId());
-		shot.setPic(vo.getPics());
+		shot.setPic(vo.getPicList().get(0));
 		shot.setProductName(vo.getName());
 		shot.setPrice(vo.getPrice());
 		if (bag == null) {
 			bag = new ShoppingBag();
+			bag.getProductShots().add(shot);
 			if (BaseUtil.getSessionAccount(req) != null) {
 				bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
 			}
-			bag.getProductShots().add(shot);
 			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_CART, bag);
 		} else {
 			bag.getProductShots().add(shot);
 		}
-		bag.setTotalAmount(bag.getTotalAmount().add(shot.getPrice()));
+		bag.setTotalAmount(bag.getTotalAmount().add(
+				shot.getPrice().multiply(BigDecimal.valueOf(shot.getNumber()))));
+		
 		SimpleMessage<ShoppingBag> sm = new SimpleMessage<ShoppingBag>();
 		sm.setItem(bag);
 		setModel(map);
@@ -253,65 +252,72 @@ public class CustomerRest {
 		// ServiceFactory.getProductShotService().delete(entity);
 		return "redirect:/detail?id=" + productId;
 	}
-	
+
 	/**
 	 * 管理收货地址
+	 * 
 	 * @return
 	 */
 	@RequestMapping("address")
-	public String address(ModelMap map , HttpServletRequest request){
+	public String address(ModelMap map, HttpServletRequest request) {
 		Account account = (Account) request.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CUSTOMER);
 		FilterAttributes fa = FilterAttributes.blank().add("loginName",
 				account.getLoginName());
 		List<Address> list = ServiceFactory.getAddressService()
 				.findByAttributes(fa);
-//		SimpleMessage<Address> sm = new SimpleMessage<Address>();
-//		sm.setRecords(list);
+		// SimpleMessage<Address> sm = new SimpleMessage<Address>();
+		// sm.setRecords(list);
 		map.put("addresses", list);
 		map.put("succ", request.getParameter("succ"));
 		return "customer/addressmg";
 	}
-	
+
 	/**
 	 * 账户管理
+	 * 
 	 * @return
 	 */
 	@RequestMapping("account")
-	public String account(ModelMap map , HttpServletRequest request){
-		Account account = (Account)request.getSession().getAttribute(INameSpace.KEY_SESSION_CUSTOMER);
+	public String account(ModelMap map, HttpServletRequest request) {
+		Account account = (Account) request.getSession().getAttribute(
+				INameSpace.KEY_SESSION_CUSTOMER);
 		map.put(INameSpace.KEY_SESSION_CUSTOMER, account);
 		map.put("succ", request.getParameter("succ"));
 		return "customer/accountmg";
 	}
+
 	/**
 	 * 保存账号信息
+	 * 
 	 * @param account
 	 * @param req
 	 * @return
 	 */
-	@RequestMapping(value="account/save" ,method=RequestMethod.POST)
-	public String accountSave(Account account , HttpServletRequest req ,ModelMap map){
-		String loginName = (String)req.getSession().getAttribute("userName");
+	@RequestMapping(value = "account/save", method = RequestMethod.POST)
+	public String accountSave(Account account, HttpServletRequest req,
+			ModelMap map) {
+		String loginName = (String) req.getSession().getAttribute("userName");
 		Account a = BaseUtil.getAccountService().getAccount(loginName);
 		a.setCustName(account.getCustName());
 		a.setEmail(account.getEmail());
 		a.setPhone(account.getPhone());
 		boolean flag = BaseUtil.getAccountService().update(a);
-		if(flag == true){
+		if (flag == true) {
 			req.getSession().setAttribute(INameSpace.KEY_SESSION_CUSTOMER, a);
 		}
 		map.put("succ", flag);
-//		map.put("account", account);
+		// map.put("account", account);
 		return "redirect:/account";
 	}
-	
+
 	/**
 	 * 密码修改
+	 * 
 	 * @return
 	 */
 	@RequestMapping("password")
-	public String password(ModelMap map , HttpServletRequest request){
+	public String password(ModelMap map, HttpServletRequest request) {
 		map.put("succ", request.getParameter("succ"));
 		return "customer/passwordmg";
 	}
@@ -336,9 +342,9 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "order/item/edit/{itemId}/{num}", method = RequestMethod.GET)
-//	@ResponseBody
-	public String editItemInOrder(
-			@PathVariable("itemId") Long itemId, @PathVariable("num") int num) {
+	// @ResponseBody
+	public String editItemInOrder(@PathVariable("itemId") Long itemId,
+			@PathVariable("num") int num) {
 		OrderItem entity = new OrderItem();
 		entity.setId(itemId);
 		entity.setNum(num);
@@ -354,8 +360,7 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "order/item/delete/{itemId}", method = RequestMethod.GET)
-	public String deleteItemInOrder(
-			@PathVariable("itemId") Long itemId) {
+	public String deleteItemInOrder(@PathVariable("itemId") Long itemId) {
 		OrderItem entity = new OrderItem();
 		entity.setId(itemId);
 		ServiceFactory.getOrderDetailService().delete(entity);
@@ -369,17 +374,19 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "address/save", method = RequestMethod.POST)
-	public String saveAddress(Address address , ModelMap map , HttpServletRequest request) {
-//		SimpleMessage<Address> sm = new SimpleMessage<Address>();
-		address.setLoginName((String)request.getSession().getAttribute("userName"));
+	public String saveAddress(Address address, ModelMap map,
+			HttpServletRequest request) {
+		// SimpleMessage<Address> sm = new SimpleMessage<Address>();
+		address.setLoginName((String) request.getSession().getAttribute(
+				"userName"));
 		boolean b = ServiceFactory.getAddressService().save(address);
-//		if (!b) {
-//			sm.getHead().setRep_code("1002");
-//			sm.getHead().setRep_message("地址保存失败");
-//		}
+		// if (!b) {
+		// sm.getHead().setRep_code("1002");
+		// sm.getHead().setRep_message("地址保存失败");
+		// }
 		map.put("succ", b);
 		return "redirect:/address";
-//		return sm;
+		// return sm;
 	}
 
 	/**
@@ -400,25 +407,30 @@ public class CustomerRest {
 		sm.setRecords(list);
 		return sm;
 	}
+
 	/**
 	 * 设置默认地址
+	 * 
 	 * @param id
 	 * @param req
 	 * @return
 	 */
-	@RequestMapping(value="address/default/{id}" ,method=RequestMethod.GET)
+	@RequestMapping(value = "address/default/{id}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage<?> setDefaultAddress(@PathVariable("id") long id , HttpServletRequest req){
+	public SimpleMessage<?> setDefaultAddress(@PathVariable("id") long id,
+			HttpServletRequest req) {
 		Account account = (Account) req.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CUSTOMER);
-		Account a = BaseUtil.getAccountService().getAccount(account.getLoginName());
+		Account a = BaseUtil.getAccountService().getAccount(
+				account.getLoginName());
 		a.setAddressId(id);
 		boolean flag = BaseUtil.getAccountService().update(a);
-		if(flag == true){
+		if (flag == true) {
 			req.getSession().setAttribute(INameSpace.KEY_SESSION_CUSTOMER, a);
 			return new SimpleMessage<Object>();
 		}
-		return new SimpleMessage<Object>(new SimpleMessageHead(SimpleMessageHead.REP_SERVICE_ERROR,"设置默认地址失败"));
+		return new SimpleMessage<Object>(new SimpleMessageHead(
+				SimpleMessageHead.REP_SERVICE_ERROR, "设置默认地址失败"));
 	}
 
 	private void setModel(ModelMap map) {
@@ -427,8 +439,8 @@ public class CustomerRest {
 		map.put("parents", parents);
 		map.put("subcatMap", subcatMap);
 	}
-	
-	private void setAddress(ModelMap map, String userName){
+
+	private void setAddress(ModelMap map, String userName) {
 		FilterAttributes fa = FilterAttributes.blank().add("loginName",
 				userName);
 		List<Address> list = ServiceFactory.getAddressService()
