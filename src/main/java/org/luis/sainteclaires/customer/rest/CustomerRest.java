@@ -84,9 +84,11 @@ public class CustomerRest {
 		if(bag != null){
 			Order order = orderService.createOrder(bag, userName);
 			req.getSession().removeAttribute(INameSpace.KEY_SESSION_CART);
+			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, order);
 			map.put("order", order);
 		} else {
 			List<Order> orders = orderService.findUnpayOrders(userName);
+			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, orders.get(orders.size() - 1));
 			map.put("order", orders.get(orders.size() - 1));
 		}
 		setAddress(map, userName);
@@ -339,14 +341,23 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "order/item/edit/{itemId}/{num}", method = RequestMethod.GET)
-	// @ResponseBody
-	public String editItemInOrder(@PathVariable("itemId") Long itemId,
-			@PathVariable("num") int num) {
-		OrderItem entity = new OrderItem();
-		entity.setId(itemId);
-		entity.setNum(num);
-		ServiceFactory.getOrderDetailService().update(entity);
-		return "redirect:/orders";
+	@ResponseBody
+	public SimpleMessage<Order> editItemInOrder(@PathVariable("itemId") Long itemId,
+			@PathVariable("num") int num, HttpServletRequest req) {
+		Order order = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
+		for(OrderItem item : order.getItems()){
+			if(itemId.equals(item.getId())){
+				int n = num - item.getNum();
+				item.setNum(num);
+				item.setSum(item.getPrice().multiply(BigDecimal.valueOf(item.getNum())));
+				order.setAmount(order.getAmount().add(item.getPrice().multiply(BigDecimal.valueOf(n))));
+				ServiceFactory.getOrderDetailService().update(item);
+				break;
+			}
+		}
+		SimpleMessage<Order> sm = new SimpleMessage<Order>();
+		sm.setItem(order);
+		return sm;
 	}
 
 	/**
@@ -357,10 +368,21 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "order/item/delete/{itemId}", method = RequestMethod.GET)
-	public String deleteItemInOrder(@PathVariable("itemId") Long itemId) {
+	public String deleteItemInOrder(@PathVariable("itemId") Long itemId, HttpServletRequest req) {
 		OrderItem entity = new OrderItem();
 		entity.setId(itemId);
 		ServiceFactory.getOrderDetailService().delete(entity);
+		Order order = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
+		int index = 0;
+		for(OrderItem item : order.getItems()){
+			if(itemId.equals(item.getId())){
+				int n = item.getNum();
+				order.setAmount(order.getAmount().subtract(item.getPrice().multiply(BigDecimal.valueOf(n))));
+				break;
+			}
+			index++;
+		}
+		order.getItems().remove(index);
 		return "redirect:/orders";
 	}
 
