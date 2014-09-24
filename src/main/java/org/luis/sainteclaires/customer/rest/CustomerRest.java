@@ -81,29 +81,32 @@ public class CustomerRest {
 		String userName = BaseUtil.getLoginName(req);
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CART);
+		Order order = null;
 		if(bag != null){
-			Order order = orderService.createOrder(bag, userName);
+			order = orderService.createOrder(bag, userName);
 			req.getSession().removeAttribute(INameSpace.KEY_SESSION_CART);
-			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, order);
-			map.put("order", order);
 		} else {
 			List<Order> orders = orderService.findUnpayOrders(userName);
-			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, orders.get(orders.size() - 1));
-			map.put("order", orders.get(orders.size() - 1));
+			if(orders != null && !orders.isEmpty()){
+				BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, orders.get(orders.size() - 1));
+				map.put("order", orders.get(orders.size() - 1));
+			}
 		}
+		BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, order);
+		map.put("order", order);
 		setAddress(map, userName);
 		return "customer/submit_order";
 	}
 
 	/**
-	 * 跳转到订单查看页面
+	 * 跳转到订单查询页面
 	 * 
 	 * @return
 	 */
 	@RequestMapping("orders")
 	public String orders(HttpServletRequest req, ModelMap map) {
 		String userName = BaseUtil.getLoginName(req);
-		List<Order> orders = orderService.findUnpayOrders(userName);
+		List<Order> orders = orderService.findOrders(userName);
 		map.put("orders", orders);
 		setAddress(map, userName);
 		return "customer/orders";
