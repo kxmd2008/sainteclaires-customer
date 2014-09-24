@@ -88,8 +88,10 @@ public class CustomerRest {
 			map.put("order", order);
 		} else {
 			List<Order> orders = orderService.findUnpayOrders(userName);
-			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, orders.get(orders.size() - 1));
-			map.put("order", orders.get(orders.size() - 1));
+			if(orders != null && !orders.isEmpty()){
+				BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, orders.get(orders.size() - 1));
+				map.put("order", orders.get(orders.size() - 1));
+			}
 		}
 		setAddress(map, userName);
 		return "customer/submit_order";
