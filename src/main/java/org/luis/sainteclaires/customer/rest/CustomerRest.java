@@ -79,8 +79,7 @@ public class CustomerRest {
 	@RequestMapping("order/confirm")
 	public String submitOrder(HttpServletRequest req, ModelMap map) {
 		String userName = BaseUtil.getLoginName(req);
-		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
-				INameSpace.KEY_SESSION_CART);
+		Order bag = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
 		Order order = null;
 		if(bag != null){
 			order = orderService.createOrder(bag, userName);
@@ -166,7 +165,44 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "shot/add", method = RequestMethod.POST)
-	public String addProductToBag(ProductShot shot, HttpServletRequest req,
+	public String addProductToBag(OrderItem shot, HttpServletRequest req,
+			ModelMap map) {
+		Order bag = (Order) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_ORDER);
+		ProductVo vo = BaseUtil.getProductVoService().get(shot.getProductId());
+		shot.setPic(vo.getPicList().get(0));
+		shot.setProductName(vo.getName());
+		shot.setPrice(vo.getPrice());
+		if (bag == null) {
+			bag = new Order();
+			bag.getItems().add(shot);
+			if (BaseUtil.getSessionAccount(req) != null) {
+				bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
+			}
+			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_CART, bag);
+		} else {
+			bag.getItems().add(shot);
+		}
+		bag.setAmount(bag.getAmount().add(
+				shot.getPrice().multiply(BigDecimal.valueOf(shot.getNum()))));
+		
+		SimpleMessage<Order> sm = new SimpleMessage<Order>();
+		sm.setItem(bag);
+		setModel(map);
+		// SimpleMessage<?> sm = new SimpleMessage<Object>();
+		// ServiceFactory.getProductShotService().save(shot);
+		return "redirect:/detail?id=" + vo.getId();
+	}
+	
+	/**
+	 * 添加商品到购物车
+	 * 
+	 * @param bagId
+	 * @param shotId
+	 * @return
+	 */
+//	@RequestMapping(value = "shot/add", method = RequestMethod.POST)
+	public String addProductToBag1(ProductShot shot, HttpServletRequest req,
 			ModelMap map) {
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CART);
@@ -204,7 +240,40 @@ public class CustomerRest {
 	 */
 	@RequestMapping(value = "shot/edit/{productId}/{num}", method = RequestMethod.GET)
 	@ResponseBody
-	public SimpleMessage<ShoppingBag> editItem(
+	public SimpleMessage<Order> editItem(
+			@PathVariable("productId") Long productId,
+			@PathVariable("num") Integer num, HttpServletRequest req) {
+		Order bag = (Order) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_ORDER);
+		for (OrderItem shot : bag.getItems()) {
+			if (shot.getProductId().equals(productId)) {
+				int n = num - shot.getNum();
+				shot.setNum(num);
+				shot.setSum(shot.getPrice().multiply(BigDecimal.valueOf(num.doubleValue())));
+				bag.setAmount(bag.getAmount().add(
+						shot.getPrice().multiply(BigDecimal.valueOf(n))));
+				break;
+			}
+		}
+		SimpleMessage<Order> sm = new SimpleMessage<Order>();
+		sm.setItem(bag);
+		// ProductShot entity = new ProductShot();
+		// entity.setId(shotId);
+		// entity.setNumber(num);
+		// ServiceFactory.getProductShotService().update(entity);
+		return sm;
+	}
+	
+	/**
+	 * 修改购物车商品
+	 * 
+	 * @param itemId
+	 * @param num
+	 * @return
+	 */
+//	@RequestMapping(value = "shot/edit/{productId}/{num}", method = RequestMethod.GET)
+//	@ResponseBody
+	public SimpleMessage<ShoppingBag> editItem1(
 			@PathVariable("productId") Long productId,
 			@PathVariable("num") Integer num, HttpServletRequest req) {
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
@@ -235,6 +304,34 @@ public class CustomerRest {
 	 */
 	@RequestMapping(value = "shot/delete/{productId}", method = RequestMethod.GET)
 	public String deleteItem(@PathVariable("productId") Long productId,
+			HttpServletRequest req) {
+		Order bag = (Order) req.getSession().getAttribute(
+				INameSpace.KEY_SESSION_ORDER);
+		OrderItem temp = null;
+		for (OrderItem shot : bag.getItems()) {
+			if (shot.getProductId().equals(productId)) {
+				temp = shot;
+				break;
+			}
+		}
+		bag.setAmount(bag.getAmount().subtract(temp.getPrice()));
+		bag.getItems().remove(temp);
+		SimpleMessage<Order> sm = new SimpleMessage<Order>();
+		sm.setItem(bag);
+		// ProductShot entity = new ProductShot();
+		// entity.setId(shotId);
+		// ServiceFactory.getProductShotService().delete(entity);
+		return "redirect:/detail?id=" + productId;
+	}
+	
+	/**
+	 * 删除购物车商品
+	 * 
+	 * @param shotId
+	 * @return
+	 */
+//	@RequestMapping(value = "shot/delete/{productId}", method = RequestMethod.GET)
+	public String deleteItem1(@PathVariable("productId") Long productId,
 			HttpServletRequest req) {
 		ShoppingBag bag = (ShoppingBag) req.getSession().getAttribute(
 				INameSpace.KEY_SESSION_CART);
