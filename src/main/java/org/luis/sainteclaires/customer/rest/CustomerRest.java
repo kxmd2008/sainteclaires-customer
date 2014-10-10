@@ -82,7 +82,7 @@ public class CustomerRest {
 		Order bag = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
 		Order order = null;
 		if(bag != null){
-			order = orderService.createOrder(bag, userName);
+//			order = orderService.createOrder(bag, userName);
 			req.getSession().removeAttribute(INameSpace.KEY_SESSION_CART);
 		} else {
 			order = orderService.findUnpayOrder(userName);
@@ -173,10 +173,13 @@ public class CustomerRest {
 		shot.setPic(vo.getPicList().get(0));
 		shot.setProductName(vo.getName());
 		shot.setPrice(vo.getPrice());
+		Account account = BaseUtil.getSessionAccount(req);
 		if (bag == null) {
 			bag = new Order();
 			bag.getItems().add(shot);
-			if (BaseUtil.getSessionAccount(req) != null) {
+			bag.setOrderDate(BaseUtil.getCurrDate());
+			bag.setOrderTime(System.currentTimeMillis());
+			if (account != null) {
 				bag.setCustNo(BaseUtil.getSessionAccount(req).getLoginName());
 			}
 			BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_CART, bag);
@@ -185,7 +188,9 @@ public class CustomerRest {
 		}
 		bag.setAmount(bag.getAmount().add(
 				shot.getPrice().multiply(BigDecimal.valueOf(shot.getNum()))));
-		
+		if (account != null) {
+			bag = orderService.createOrder(bag, account.getLoginName());
+		}
 		SimpleMessage<Order> sm = new SimpleMessage<Order>();
 		sm.setItem(bag);
 		setModel(map);
@@ -418,16 +423,16 @@ public class CustomerRest {
 	}
 
 	// /////////////订单操作///////////////////
-	/**
-	 * 从购物车创建订单
-	 * 
-	 * @param shotId
-	 * @return
-	 */
-	@RequestMapping(value = "order/create/{bagId}", method = RequestMethod.GET)
-	public String createOrder(@PathVariable("bagId") String bagId) {
-		return "";
-	}
+//	/**
+//	 * 从购物车创建订单
+//	 * 
+//	 * @param shotId
+//	 * @return
+//	 */
+//	@RequestMapping(value = "order/create/{bagId}", method = RequestMethod.GET)
+//	public String createOrder(@PathVariable("bagId") String bagId) {
+//		return "";
+//	}
 
 	/**
 	 * 订单某一商品修改
@@ -480,6 +485,16 @@ public class CustomerRest {
 		}
 		order.getItems().remove(index);
 		return "redirect:/orders";
+	}
+	
+	/**
+	 * 支付
+	 * @return
+	 */
+	@RequestMapping(value = "pay", method = RequestMethod.GET)
+	public String pay(){
+		
+		return "pay";
 	}
 
 	/**
