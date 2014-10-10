@@ -1,5 +1,6 @@
 package org.luis.sainteclaires.customer.rest;
 
+import org.luis.sainteclaires.base.bean.Order;
 import org.luis.sainteclaires.base.bean.OrderItem;
 import org.luis.sainteclaires.base.bean.service.ServiceFactory;
 import org.springframework.stereotype.Controller;
@@ -22,9 +23,18 @@ public class CustomerOrder {
 	
 	@RequestMapping(value = "exchange/submit", method=RequestMethod.POST)
 	public String exchangeSubmit(OrderItem item, ModelMap map) {
-		item = ServiceFactory.getOrderDetailService().get(item.getId());
-		item.setStatus(OrderItem.STATUS_RETURN);
+		OrderItem nitem = ServiceFactory.getOrderDetailService().get(item.getId());
+		//更新原订单item状态为完成
+		nitem.setStatus(OrderItem.STATUS_COMPLETE);
 		ServiceFactory.getOrderDetailService().update(item);
+		//创建新订单
+		nitem.setStatus(OrderItem.STATUS_RETURN);
+		nitem.setId(null);
+		nitem.setNote(item.getNote());
+		ServiceFactory.getOrderDetailService().save(nitem);
+		Order order = ServiceFactory.getOrderService().get(nitem.getOrderId());
+		order.setId(null);
+		ServiceFactory.getOrderService().save(order);
 		return "customer/orders";
 	}
 	
