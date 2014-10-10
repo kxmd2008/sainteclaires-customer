@@ -28,13 +28,14 @@ public class CustomerOrder {
 		nitem.setStatus(OrderItem.STATUS_COMPLETE);
 		ServiceFactory.getOrderDetailService().update(item);
 		//创建新订单
-		nitem.setStatus(OrderItem.STATUS_RETURN);
-		nitem.setId(null);
-		nitem.setNote(item.getNote());
-		ServiceFactory.getOrderDetailService().save(nitem);
 		Order order = ServiceFactory.getOrderService().get(nitem.getOrderId());
 		order.setId(null);
 		ServiceFactory.getOrderService().save(order);
+		nitem.setStatus(OrderItem.STATUS_RETURN);
+		nitem.setId(null);
+		nitem.setOrderId(order.getId());
+		nitem.setNote(item.getNote());
+		ServiceFactory.getOrderDetailService().save(nitem);
 		return "customer/orders";
 	}
 	
