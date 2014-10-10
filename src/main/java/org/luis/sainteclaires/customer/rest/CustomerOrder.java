@@ -36,7 +36,7 @@ public class CustomerOrder {
 		nitem.setOrderId(order.getId());
 		nitem.setNote(item.getNote());
 		ServiceFactory.getOrderDetailService().save(nitem);
-		return "customer/orders";
+		return "redirect:/orders";
 	}
 	
 }

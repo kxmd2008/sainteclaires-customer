@@ -80,15 +80,15 @@ public class CustomerRest {
 	public String submitOrder(HttpServletRequest req, ModelMap map) {
 		String userName = BaseUtil.getLoginName(req);
 		Order bag = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
-		Order order = null;
-		if(bag != null){
-//			order = orderService.createOrder(bag, userName);
-			req.getSession().removeAttribute(INameSpace.KEY_SESSION_CART);
-		} else {
-			order = orderService.findUnpayOrder(userName);
-		}
-		BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, order);
-		map.put("order", order);
+//		Order order = null;
+//		if(bag != null){
+////			order = orderService.createOrder(bag, userName);
+//			req.getSession().removeAttribute(INameSpace.KEY_SESSION_CART);
+//		} else {
+//			order = orderService.findUnpayOrder(userName);
+//		}
+//		BaseUtil.setSessionAttr(req, INameSpace.KEY_SESSION_ORDER, bag);
+		map.put("order", bag);
 		setAddress(map, userName);
 		return "customer/submit_order";
 	}
