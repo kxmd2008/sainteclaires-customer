@@ -101,8 +101,12 @@ public class CustomerRest {
 	@RequestMapping("orders")
 	public String orders(HttpServletRequest req, ModelMap map) {
 		String userName = BaseUtil.getLoginName(req);
-		List<Order> orders = orderService.findOrders(userName);
+		String start = BaseUtil.getPre30();
+		String end = BaseUtil.getCurrDate();
+		List<Order> orders = orderService.findOrders(userName, start, end);
 		map.put("orders", orders);
+		map.put("start", start);
+		map.put("end", end);
 		setAddress(map, userName);
 		return "customer/orders";
 	}
