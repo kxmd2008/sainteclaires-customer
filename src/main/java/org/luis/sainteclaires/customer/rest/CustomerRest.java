@@ -110,6 +110,21 @@ public class CustomerRest {
 		setAddress(map, userName);
 		return "customer/orders";
 	}
+	/**
+	 * 跳转到订单查询页面
+	 * 
+	 * @return
+	 */
+	@RequestMapping(value="orders/find",method=RequestMethod.POST)
+	public String ordersFind(String start , String end ,HttpServletRequest req, ModelMap map) {
+		String userName = BaseUtil.getLoginName(req);
+		List<Order> orders = orderService.findOrders(userName, start, end);
+		map.put("orders", orders);
+		map.put("start", start);
+		map.put("end", end);
+		setAddress(map, userName);
+		return "customer/orders";
+	}
 
 	/**
 	 * 帐号验证
