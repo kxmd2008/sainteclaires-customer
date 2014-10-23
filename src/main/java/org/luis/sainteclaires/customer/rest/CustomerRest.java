@@ -511,8 +511,9 @@ public class CustomerRest {
 	 * @return
 	 */
 	@RequestMapping(value = "pay", method = RequestMethod.GET)
-	public String pay(){
-		
+	public String pay(HttpServletRequest req){
+		Order order = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
+		orderService.pay(order);
 		return "pay";
 	}
 
