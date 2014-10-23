@@ -514,7 +514,7 @@ public class CustomerRest {
 	public String pay(HttpServletRequest req){
 		Order order = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
 		orderService.pay(order);
-		return "pay";
+		return "paysucc";
 	}
 
 	/**
