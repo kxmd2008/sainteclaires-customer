@@ -513,8 +513,20 @@ public class CustomerRest {
 	@RequestMapping(value = "pay", method = RequestMethod.GET)
 	public String pay(HttpServletRequest req){
 		Order order = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
-		orderService.pay(order);
-		return "paysucc";
+		boolean b = orderService.pay(order);
+		if(b){
+			BaseUtil.removeSessionAttr(req, INameSpace.KEY_SESSION_ORDER);;
+		}
+		return "redirect:/paysucc";
+	}
+	
+	/**
+	 * 支付
+	 * @return
+	 */
+	@RequestMapping(value = "paysucc", method = RequestMethod.GET)
+	public String paysucc(HttpServletRequest req){
+		return "customer/paysucc";
 	}
 
 	/**
