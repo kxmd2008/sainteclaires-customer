@@ -521,6 +521,18 @@ public class CustomerRest {
 	}
 	
 	/**
+	 * 收货
+	 * @return
+	 */
+	@RequestMapping(value = "shouhuo", method = RequestMethod.GET)
+	public String shouhuo(HttpServletRequest req){
+		Long id = Long.valueOf(req.getParameter("orderId"));
+		Integer status = Integer.valueOf(req.getParameter("status"));
+		orderService.shouhuo(id, status);
+		return "redirect:/orders";
+	}
+	
+	/**
 	 * 支付
 	 * @return
 	 */
