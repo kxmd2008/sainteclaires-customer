@@ -27,9 +27,15 @@ public class CustomerOrder {
 		//更新原订单item状态为完成
 		nitem.setStatus(OrderItem.STATUS_COMPLETE);
 		ServiceFactory.getOrderDetailService().update(item);
-		//创建新订单
+		
 		Order order = ServiceFactory.getOrderService().get(nitem.getOrderId());
+		order.setStatus(OrderItem.STATUS_COMPLETE);
+		ServiceFactory.getOrderService().save(order);
+		
+		
+		//创建新订单
 		order.setId(null);
+		order.setStatus(Order.STATUS_RETURN);
 		ServiceFactory.getOrderService().save(order);
 		nitem.setStatus(OrderItem.STATUS_RETURN);
 		nitem.setId(null);
