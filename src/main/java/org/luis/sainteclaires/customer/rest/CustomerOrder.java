@@ -35,6 +35,7 @@ public class CustomerOrder {
 		
 		//创建新订单
 		order.setId(null);
+		order.setNote(item.getNote());
 		order.setStatus(Order.STATUS_RETURN);
 		ServiceFactory.getOrderService().save(order);
 		nitem.setStatus(OrderItem.STATUS_RETURN);

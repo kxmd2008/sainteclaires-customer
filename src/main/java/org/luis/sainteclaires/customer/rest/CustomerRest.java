@@ -1,6 +1,7 @@
 package org.luis.sainteclaires.customer.rest;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
@@ -513,7 +514,12 @@ public class CustomerRest {
 	@RequestMapping(value = "pay", method = RequestMethod.GET)
 	public String pay(HttpServletRequest req){
 		Order order = (Order) BaseUtil.getSessionAttr(req, INameSpace.KEY_SESSION_ORDER);
-		boolean b = orderService.pay(order);
+		boolean b = true;
+		try {
+			b = orderService.pay(order);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 		if(b){
 			BaseUtil.removeSessionAttr(req, INameSpace.KEY_SESSION_ORDER);;
 		}
